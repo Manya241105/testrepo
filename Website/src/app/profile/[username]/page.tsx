@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from "next/image";
+import Link from "next/link";
 import { Grid3x3, Bookmark, UserSquare2, Lock, FileText, Heart, MessageSquare, Repeat, Send, MoreHorizontal, Share2 } from "lucide-react";
 import type { Post } from "@/lib/types";
 import { createServerClient } from "@/lib/supabase/server";
@@ -123,7 +124,7 @@ export default async function ProfilePage({ params }: { params: { username: stri
               <div className="grid grid-cols-3 md:grid-cols-3 gap-1 md:gap-4">
                 {posts.length > 0 ? (
                   posts.map((post) => (
-                    <div key={post.id} className="relative aspect-square">
+                    <Link key={post.id} href={`/profile/${profile.username}/posts`} className="relative aspect-square block">
                       {post.media?.[0]?.url ? (
                         <Image
                           src={post.media[0].url}
@@ -134,7 +135,7 @@ export default async function ProfilePage({ params }: { params: { username: stri
                       ) : (
                         <div className="bg-muted h-full w-full rounded-md md:rounded-lg" />
                       )}
-                    </div>
+                    </Link>
                   ))
                 ) : (
                   <div className="text-center text-muted-foreground py-16 col-span-3">
