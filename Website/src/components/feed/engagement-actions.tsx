@@ -7,6 +7,7 @@ import { Heart, MessageSquare, Share2, Bookmark, MoreHorizontal } from "lucide-r
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Post, Like, Comment, Bookmark as BookmarkType, Share } from "@/lib/types";
+import { ShareDialog } from "./share-dialog";
 
 interface EngagementActionsProps {
   post: Post;
@@ -22,6 +23,7 @@ export function EngagementActions({ post, currentUserId, onEngagementChange }: E
   const [sharesCount, setSharesCount] = useState(post.share_count || 0);
   const [bookmarksCount, setBookmarksCount] = useState(post.save_count || 0);
   const [isLoading, setIsLoading] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -194,7 +196,7 @@ export function EngagementActions({ post, currentUserId, onEngagementChange }: E
     }
   };
 
-  const handleShare = async () => {
+  const handleShareClick = () => {
     if (!currentUserId) {
       toast({
         title: "Please log in",
@@ -203,6 +205,11 @@ export function EngagementActions({ post, currentUserId, onEngagementChange }: E
       });
       return;
     }
+    setShowShareDialog(true);
+  };
+
+  const recordShare = async () => {
+    if (!currentUserId) return;
 
     setIsLoading(true);
     try {
@@ -218,10 +225,7 @@ export function EngagementActions({ post, currentUserId, onEngagementChange }: E
       if (fetchError) throw fetchError;
 
       if (existingShare) {
-        toast({
-          title: "Already shared",
-          description: "You’ve already shared this post.",
-        });
+        // User already shared, don't increment count but allow sharing
         setIsLoading(false);
         return;
       }
@@ -237,26 +241,9 @@ export function EngagementActions({ post, currentUserId, onEngagementChange }: E
       if (error) throw error;
 
       setSharesCount(prev => prev + 1);
-
-      // Copy post URL to clipboard
-      const postUrl = `${window.location.origin}/post/${post.id}`;
-      await navigator.clipboard.writeText(postUrl);
-
-      toast({
-        title: "Post shared!",
-        description: "Post link copied to clipboard.",
-      });
-
       onEngagementChange?.();
     } catch (error) {
-      console.error('Error sharing post:', error);
-      toast({
-        title: "Error",
-        description: typeof error === 'object' && error && 'message' in error
-          ? String((error as any).message)
-          : `Failed to share post. ${JSON.stringify(error)}`,
-        variant: "destructive",
-      });
+      console.error('Error recording share:', error);
     } finally {
       setIsLoading(false);
     }
@@ -296,7 +283,7 @@ export function EngagementActions({ post, currentUserId, onEngagementChange }: E
           variant="ghost"
           size="sm"
           className="flex items-center gap-1.5 px-2"
-          onClick={handleShare}
+          onClick={handleShareClick}
           disabled={isLoading}
         >
           <Share2 className="h-4 w-4" />
@@ -314,6 +301,13 @@ export function EngagementActions({ post, currentUserId, onEngagementChange }: E
         <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
         <span className="hidden sm:inline">{bookmarksCount} {bookmarksCount === 1 ? 'Save' : 'Saves'}</span>
       </Button>
+      
+      <ShareDialog
+        post={post}
+        isOpen={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+        onShare={recordShare}
+      />
     </div>
   );
 }
